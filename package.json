@@ -1,6 +1,6 @@
 {
   "name": "telegraf",
-  "version": "4.16.3",
+  "version": "4.16.3-fork",
   "description": "Modern Telegram Bot Framework",
   "license": "MIT",
   "author": "The Telegraf Contributors",
@@ -98,15 +98,15 @@
     "abort-controller": "^3.0.0",
     "debug": "^4.3.4",
     "mri": "^1.2.0",
-    "node-fetch": "^2.7.0",
     "p-timeout": "^4.1.0",
     "safe-compare": "^1.1.4",
-    "sandwich-stream": "^2.0.2"
+    "sandwich-stream": "^2.0.2",
+    "undici": "^6.14.0",
+    "undici-types": "^6.14.0"
   },
   "devDependencies": {
     "@types/debug": "^4.1.8",
     "@types/node": "^20.4.2",
-    "@types/node-fetch": "^2.6.2",
     "@types/safe-compare": "^1.1.0",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",

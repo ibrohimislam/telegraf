@@ -1,11 +1,12 @@
 import * as stream from 'stream'
+import { ReadableStream } from 'node:stream/web'
 import { hasPropType } from '../helpers/check'
 import SandwichStream from 'sandwich-stream'
 const CRNL = '\r\n'
 
 interface Part {
   headers: { [key: string]: string }
-  body: NodeJS.ReadStream | NodeJS.ReadableStream | Buffer | string
+  body: ReadableStream | NodeJS.ReadStream | NodeJS.ReadableStream | Buffer | string
 }
 
 class MultipartStream extends SandwichStream {

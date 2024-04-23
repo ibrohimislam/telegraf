@@ -5,7 +5,7 @@ import { stat, realpath } from 'fs/promises'
 import * as http from 'http'
 import * as https from 'https'
 import * as path from 'path'
-import fetch, { RequestInit } from 'node-fetch'
+import * as undici from 'undici'
 import { hasProp, hasPropType } from '../helpers/check'
 import { InputFile, Opts, Telegram } from '../types/typegram'
 import { AbortSignal } from 'abort-controller'
@@ -26,12 +26,12 @@ const WEBHOOK_REPLY_METHOD_ALLOWLIST = new Set<keyof Telegram>([
 ])
 
 namespace ApiClient {
-  export type Agent = http.Agent | ((parsedUrl: URL) => http.Agent) | undefined
+  export type Agent = undici.Agent | undefined
   export interface Options {
     /**
      * Agent for communicating with the bot API.
      */
-    agent?: http.Agent
+    agent?: undici.Agent
     /**
      * Agent for attaching files via URL.
      * 1. Not all agents support both `http:` and `https:`.
@@ -68,10 +68,7 @@ const DEFAULT_OPTIONS: ApiClient.Options = {
   apiRoot: 'https://api.telegram.org',
   apiMode: 'bot',
   webhookReply: true,
-  agent: new https.Agent({
-    keepAlive: true,
-    keepAliveMsecs: 10000,
-  }),
+  agent: new undici.Agent(),
   attachmentAgent: undefined,
   testEnv: false,
 }
@@ -103,7 +100,7 @@ function replacer(_: unknown, value: unknown) {
   return value
 }
 
-function buildJSONConfig(payload: unknown): Promise<RequestInit> {
+function buildJSONConfig(payload: unknown): Promise<undici.RequestInit> {
   return Promise.resolve({
     method: 'POST',
     compress: true,
@@ -231,14 +228,15 @@ async function attachFormMedia(
 ) {
   let fileName = media.filename ?? `${id}.${DEFAULT_EXTENSIONS[id] ?? 'dat'}`
   if ('url' in media && media.url !== undefined) {
-    const timeout = 500_000 // ms
-    const res = await fetch(media.url, { agent, timeout })
-    return form.addPart({
-      headers: {
-        'content-disposition': `form-data; name="${id}"; filename="${fileName}"`,
-      },
-      body: res.body,
-    })
+    const res = await undici.fetch(media.url, { dispatcher: agent })
+    if (res.body) {
+      return form.addPart({
+        headers: {
+          'content-disposition': `form-data; name="${id}"; filename="${fileName}"`,
+        },
+        body: res.body,
+      })
+    }
   }
   if ('source' in media && media.source) {
     let mediaSource = media.source
@@ -312,9 +310,6 @@ class ApiClient {
       ...DEFAULT_OPTIONS,
       ...compactOptions(options),
     }
-    if (this.options.apiRoot.startsWith('http://')) {
-      this.options.agent = undefined
-    }
   }
 
   /**
@@ -362,7 +357,7 @@ class ApiClient {
 
     debug('HTTP call', method, payload)
 
-    const config: RequestInit = includesMedia(payload)
+    const config: undici.RequestInit = includesMedia(payload)
       ? await buildFormDataConfig(
           { method, ...payload },
           options.attachmentAgent
@@ -372,11 +367,11 @@ class ApiClient {
       `./${options.apiMode}${token}${options.testEnv ? '/test' : ''}/${method}`,
       options.apiRoot
     )
-    config.agent = options.agent
+    config.dispatcher = options.agent
     // @ts-expect-error AbortSignal shim is missing some props from Request.AbortSignal
     config.signal = signal
-    config.timeout = 500_000 // ms
-    const res = await fetch(apiUrl, config).catch(redactToken)
+    // config.timeout = 500_000 // ms
+    const res = await undici.fetch(apiUrl, config).catch(redactToken)
     if (res.status >= 500) {
       const errorPayload = {
         error_code: res.status,
@@ -384,7 +379,7 @@ class ApiClient {
       }
       throw new TelegramError(errorPayload, { method, payload })
     }
-    const data = await res.json()
+    const data = (await res.json()) as any
     if (!data.ok) {
       debug('API call failed', data)
       throw new TelegramError(data, { method, payload })
