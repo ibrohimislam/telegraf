@@ -5,7 +5,15 @@ import { stat, realpath } from 'fs/promises'
 import * as http from 'http'
 import * as https from 'https'
 import * as path from 'path'
-import * as undici from 'undici'
+// Import the explicit subpath rather than the bare 'undici' specifier: Bun
+// intercepts `require("undici")`/`import ... from "undici"` and serves its
+// own native built-in implementation instead of this package, and that
+// built-in doesn't honor the `dispatcher` option this file relies on to
+// route requests through a custom (e.g. Unix-socket) Agent -- it silently
+// falls back to a plain TCP request to the URL's host. The subpath bypasses
+// Bun's override; undici's package.json has no "exports" map, so this
+// resolves identically under Node.
+import * as undici from 'undici/index.js'
 import { hasProp, hasPropType } from '../helpers/check'
 import { InputFile, Opts, Telegram } from '../types/typegram'
 import { AbortSignal } from 'abort-controller'
