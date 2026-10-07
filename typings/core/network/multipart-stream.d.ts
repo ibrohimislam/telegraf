@@ -1,0 +1,21 @@
+/// <reference types="node" />
+/// <reference types="node" />
+/// <reference types="node" />
+/// <reference types="node" />
+import { ReadableStream } from 'node:stream/web';
+import SandwichStream from 'sandwich-stream';
+interface Part {
+    headers: {
+        [key: string]: string;
+    };
+    body: ReadableStream | NodeJS.ReadStream | NodeJS.ReadableStream | Buffer | string;
+}
+declare class MultipartStream extends SandwichStream {
+    constructor(boundary: string);
+    addPart(part: Part): void;
+    static isStream(stream: unknown): stream is {
+        pipe: MultipartStream['pipe'];
+    };
+}
+export default MultipartStream;
+//# sourceMappingURL=multipart-stream.d.ts.map
