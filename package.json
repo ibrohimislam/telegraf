@@ -101,8 +101,8 @@
     "p-timeout": "^4.1.0",
     "safe-compare": "^1.1.4",
     "sandwich-stream": "^2.0.2",
-    "undici": "^6.14.0",
-    "undici-types": "^6.14.0"
+    "undici": "^8.12.3",
+    "undici-types": "^8.12.3"
   },
   "devDependencies": {
     "@types/debug": "^4.1.8",
